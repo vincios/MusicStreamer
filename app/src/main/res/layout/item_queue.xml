@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="72dp"
+    app:theme="@style/AppThemeLight"
+    android:foreground="?selectableItemBackground"
+    android:stateListAnimator="@animator/lift_on_touch">
+
+    <ImageView
+        android:id="@+id/queueItemImage"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:contentDescription="Image"
+        android:src="@mipmap/ic_note_circle"
+        android:paddingStart="@dimen/list_item_icon_padding_left"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:gravity="center_vertical"
+        android:paddingStart="@dimen/list_item_text_padding_left"
+        android:paddingEnd="@dimen/list_item_icon_padding_left">
+        <TextView
+            android:id="@+id/queueItemTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/list_item_title_text"
+            android:text="Song title"
+            android:textColor="@android:color/primary_text_dark"/>
+        <TextView
+            android:id="@+id/queueItemArtist"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/list_item_second_text"
+            android:text="Song artist"
+            android:textColor="@android:color/secondary_text_dark"/>
+    </LinearLayout>
+</RelativeLayout>

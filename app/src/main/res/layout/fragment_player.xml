@@ -1,0 +1,170 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    tools:context="com.vincios.musicstreamer2.ui.activities.PlayerFragment"
+    android:theme="@style/AppThemeLight">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:theme="@style/AppThemeLight">
+
+
+        <ImageSwitcher
+            android:id="@+id/playerBackgroundImage"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            android:src="@color/bg_color" />
+
+        <!-- Mini Player Layout -->
+        <android.support.v7.widget.CardView
+            android:layout_width="match_parent"
+            android:layout_height="@dimen/mini_player_height"
+            android:id="@+id/miniPlayerLayout">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:layout_toStartOf="@+id/miniPlayerPlayPauseButton"
+                android:layout_centerVertical="true"
+                android:layout_marginEnd="@dimen/mini_player_height"
+                >
+                <TextView
+                    android:id="@+id/miniPlayerTitleText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/player_title"
+                    android:textSize="@dimen/list_item_title_text" />
+
+
+                <TextView
+                    android:id="@+id/miniPlayerArtistText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/player_artist" />
+
+            </LinearLayout>
+
+            <ImageButton
+                android:id="@+id/miniPlayerPlayPauseButton"
+                android:layout_width="@dimen/mini_player_height"
+                android:layout_height="@dimen/mini_player_height"
+                android:src="@drawable/vd_playtopause"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:scaleType="fitXY"
+                android:background="?android:selectableItemBackgroundBorderless"
+                android:layout_gravity="end"
+                android:contentDescription="@string/play_pause_button_description" />
+        </android.support.v7.widget.CardView>
+
+        <!-- Panel Content Layout -->
+        <RelativeLayout
+            android:id="@+id/playerLayout"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/black_alpha_40"
+            android:theme="@style/AppThemeLight">
+
+
+            <android.support.v7.widget.Toolbar
+                android:id="@+id/playerToolbar"
+                android:layout_width="match_parent"
+                android:layout_height="?attr/actionBarSize"
+                android:background="@drawable/toolbar_transparent_gradient"
+                android:visibility="visible"
+                android:alpha="0"
+                android:layout_alignParentTop="true"
+                android:layout_alignParentStart="true" />
+
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/playerCurrentQueue"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:paddingBottom="@dimen/list_padding_top_bottom"
+                android:paddingTop="@dimen/list_padding_top_bottom"
+                android:layout_below="@id/playerToolbar" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_alignParentBottom="true"
+                android:orientation="vertical"
+                android:background="@drawable/bg_transparent_gradient_top_bottom">
+
+                <RelativeLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:id="@+id/playerCurrentTimeText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="00:00"
+                        android:textColor="@android:color/primary_text_dark"
+                        android:layout_alignParentStart="true"/>
+
+
+                    <TextView
+                        android:id="@+id/playerDurationText"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:text="00:00"
+                        android:textColor="@android:color/primary_text_dark"
+                        android:layout_alignParentEnd="true"/>
+
+                    <SeekBar
+                        android:id="@+id/playerSeekBar"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:progressTint="@color/colorAccent"
+                        android:layout_gravity="center"
+                        android:layout_toEndOf="@id/playerCurrentTimeText"
+                        android:layout_toStartOf="@id/playerDurationText"
+                        />
+
+                </RelativeLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <ImageButton
+                        android:layout_width="@dimen/player_button_width"
+                        android:layout_height="@dimen/player_button_height"
+                        android:src="@drawable/ic_skip_previous_black_24dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:layout_weight="1"
+                        />
+
+                    <ImageButton
+                        android:layout_width="@dimen/player_button_width"
+                        android:layout_height="@dimen/player_button_height"
+                        android:id="@+id/playerPlayPauseButton"
+                        android:src="@drawable/ic_play_arrow_black_24dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:layout_weight="2"
+                        android:scaleType="center"
+                        android:contentDescription="@string/play_pause_button_description" />
+
+                    <ImageButton
+                        android:id="@+id/imageButton"
+                        android:layout_width="@dimen/player_button_width"
+                        android:layout_height="@dimen/player_button_height"
+                        android:layout_weight="1"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_skip_next_black_24dp" />
+                </LinearLayout>
+
+            </LinearLayout>
+        </RelativeLayout>
+    </RelativeLayout>
+</FrameLayout>

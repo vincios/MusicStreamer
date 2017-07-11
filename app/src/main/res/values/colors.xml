@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorPrimary">#1de9b6</color>
+    <color name="colorPrimaryDark">#00bfa5</color>
+    <color name="colorAccent">#FF4081</color>
+
+    <color name="starDisabled">#cecece</color>
+    <color name="starEnabled">#ffff00</color>
+    <color name="black_alpha_150">#96000000</color>
+    <color name="black_alpha_40">#28000000</color>
+    <color name="bg_color">#455a64</color>
+</resources>
