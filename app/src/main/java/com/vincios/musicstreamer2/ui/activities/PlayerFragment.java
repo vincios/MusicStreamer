@@ -7,11 +7,11 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Picture;
 import android.graphics.RectF;
-import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.PictureDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.RemoteException;
+import android.os.ResultReceiver;
 import android.os.SystemClock;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentActivity;
@@ -35,7 +35,6 @@ import android.view.animation.AnimationUtils;
 import android.widget.ImageButton;
 import android.widget.ImageSwitcher;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -76,7 +75,6 @@ public class PlayerFragment extends Fragment implements ViewSwitcher.ViewFactory
     private android.support.v4.media.session.MediaControllerCompat.Callback mMediaSessionCallback;
 
     private CardView mMiniPlayerLayout;
-    private RelativeLayout mPlayerLayout;
     private RecyclerView mCurrentQueueList;
 
     private ImageButton mMiniPlayerPlayPauseButton;
@@ -105,6 +103,7 @@ public class PlayerFragment extends Fragment implements ViewSwitcher.ViewFactory
     };
     private final ScheduledExecutorService mExecutorService = Executors.newSingleThreadScheduledExecutor();
     private ScheduledFuture<?> mScheduleFuture;
+    private ResultReceiver mBufferedPositionReceiver = new BufferedPositionReceiver(null);
 
     public PlayerFragment() {
         // Required empty public constructor
@@ -135,7 +134,7 @@ public class PlayerFragment extends Fragment implements ViewSwitcher.ViewFactory
             metadata = mMediaController.getMetadata();
 
         if(metadata != null) {
-            mArtistTextView.setText(metadata.getString(MediaMetadataCompat.METADATA_KEY_AUTHOR));
+            mArtistTextView.setText(metadata.getString(MediaMetadataCompat.METADATA_KEY_ARTIST));
             mTitleTextView.setText(metadata.getString(MediaMetadataCompat.METADATA_KEY_TITLE));
             if(metadata.getBitmap(MediaMetadataCompat.METADATA_KEY_ART) != null){
                 Bitmap image = metadata.getBitmap(MediaMetadataCompat.METADATA_KEY_ART);
@@ -208,7 +207,7 @@ public class PlayerFragment extends Fragment implements ViewSwitcher.ViewFactory
     }
 
     private void updateQueueUI(List<MediaSessionCompat.QueueItem> queue, long currentPlayingQueueId){
-        if(queue == null)
+        if(queue == null && mMediaController != null)
             queue = mMediaController.getQueue();
 
 
@@ -226,7 +225,7 @@ public class PlayerFragment extends Fragment implements ViewSwitcher.ViewFactory
         View v = inflater.inflate(R.layout.fragment_player, container, false);
 
         mMiniPlayerLayout = (CardView) v.findViewById(R.id.miniPlayerLayout);
-        mPlayerLayout = (RelativeLayout) v.findViewById(R.id.playerLayout);
+        // mPlayerLayout = (RelativeLayout) v.findViewById(R.id.playerLayout);
         mToolbar = (Toolbar) v.findViewById(R.id.playerToolbar);
         mToolbar.setNavigationIcon(R.drawable.ic_arrow_back_black_24dp);
         mMiniPlayerPlayPauseButton = (ImageButton) v.findViewById(R.id.miniPlayerPlayPauseButton);
@@ -288,7 +287,6 @@ public class PlayerFragment extends Fragment implements ViewSwitcher.ViewFactory
                 scheduleSeekBarUpdate();
             }
         });
-        //mBackgroundImage.setImageResource(R.drawable.bg_fullscreen_gradient);
         initializeCurrentQueueList(v);
         return v;
     }
@@ -353,7 +351,7 @@ public class PlayerFragment extends Fragment implements ViewSwitcher.ViewFactory
         mProgressUpdateIteration++;
 
         if(mProgressUpdateIteration % 3 == 0 && mSeekBar.getSecondaryProgress() < mSeekBar.getMax()){
-            mMediaController.getTransportControls().sendCustomAction(Utils.ACTION_UPDATE_BUFFERED_POSITION, null);
+            mMediaController.sendCommand(Utils.CONSTANTS.ACTION_UPDATE_BUFFERED_POSITION, null, mBufferedPositionReceiver);
         }
     }
 
@@ -392,6 +390,9 @@ public class PlayerFragment extends Fragment implements ViewSwitcher.ViewFactory
         super.onStart();
         if (!mMediaBrowser.isConnected())
             mMediaBrowser.connect();
+
+        if(mMediaBrowser.isConnected())
+            updateQueueUI(null, MediaSessionCompat.QueueItem.UNKNOWN_ID);
     }
 
     public void setMiniPlayerVisibility(int visibility){
@@ -428,8 +429,23 @@ public class PlayerFragment extends Fragment implements ViewSwitcher.ViewFactory
      */
     public interface PlayerInteractionListener {
         void onBackIconPressed();
+
+        void reloadSongLink(MediaBrowserCompat.MediaItem itemToReload);
     }
 
+    private class BufferedPositionReceiver extends ResultReceiver{
+        public BufferedPositionReceiver(Handler handler) {
+            super(handler);
+        }
+
+        @Override
+        protected void onReceiveResult(int resultCode, Bundle resultData) {
+            if(resultCode == 1){
+                long bufferedPosition = resultData.getLong(Utils.CONSTANTS.BUFFERED_POSITION);
+                mSeekBar.setSecondaryProgress((int) bufferedPosition);
+            }
+        }
+    }
     private class MySessionCallback extends MediaControllerCompat.Callback{
         public MySessionCallback() {
             super();
@@ -443,8 +459,13 @@ public class PlayerFragment extends Fragment implements ViewSwitcher.ViewFactory
             if(state.getState() == PlaybackStateCompat.STATE_BUFFERING){
                 Toast.makeText(mContext, getResources().getText(R.string.player_buffering), Toast.LENGTH_SHORT).show();
             }
-            mLastPlaybackState = state;
-            updatePlaybackStateUI(state);
+
+            if(state.getState() == PlaybackStateCompat.STATE_ERROR){
+                handlePlaybackError(state);
+            }else {
+                mLastPlaybackState = state;
+                updatePlaybackStateUI(state);
+            }
 
         }
 
@@ -464,7 +485,19 @@ public class PlayerFragment extends Fragment implements ViewSwitcher.ViewFactory
 
     }
 
+    private void handlePlaybackError(PlaybackStateCompat state) {
+        int errorCode = state.getErrorCode();
+        String message = state.getErrorMessage().toString();
 
+        Toast.makeText(mContext, getText(R.string.song_connection_failed) + ": " + message, Toast.LENGTH_LONG).show();
+        MediaBrowserCompat.MediaItem errorItem = PlayingSongsQueue.getInstance().getItemAtPosition((int) state.getActiveQueueItemId());
+        switch (errorCode){
+            case PlaybackStateCompat.ERROR_CODE_NOT_SUPPORTED:
+                Log.d(LOGTAG, "Trying to reload song link...");
+                mListener.reloadSongLink(errorItem);
+                break;
+        }
+    }
 
     private MediaBrowserCompat.ConnectionCallback mConnectionCallback = new MediaBrowserCompat.ConnectionCallback(){
 
@@ -516,4 +549,6 @@ public class PlayerFragment extends Fragment implements ViewSwitcher.ViewFactory
             Log.d(LOGTAG, "onConnectionFailed");
         }
     };
+
+
 }

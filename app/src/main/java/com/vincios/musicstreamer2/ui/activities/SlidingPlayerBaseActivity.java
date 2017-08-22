@@ -18,7 +18,7 @@ import com.vincios.musicstreamer2.connectors.Song;
  * com.sothree.slidinguppanel.SlidingUpPanelLayout with id 'sliding_root_layout' and MUST have as
  * root layout's second child a FrameLayout with id 'bottomPanel'
  */
-public class SlidingPlayerBaseActivity extends AppCompatActivity implements PlayerFragment.PlayerInteractionListener {
+public abstract class SlidingPlayerBaseActivity extends AppCompatActivity implements PlayerFragment.PlayerInteractionListener {
 
     private SlidingUpPanelLayout.PanelSlideListener mPanelSlideListener = new SlidingUpPanelLayout.PanelSlideListener() {
         @Override

@@ -45,6 +45,7 @@ import com.google.android.exoplayer2.trackselection.MappingTrackSelector;
 import com.google.android.exoplayer2.trackselection.TrackSelection;
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
 import com.google.android.exoplayer2.upstream.DataSource;
+import com.google.android.exoplayer2.upstream.DataSourceException;
 import com.google.android.exoplayer2.upstream.DefaultAllocator;
 import com.google.android.exoplayer2.upstream.DefaultBandwidthMeter;
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
@@ -433,6 +434,7 @@ public class LocalPlayback implements ExoPlayer.EventListener, ExtractorMediaSou
         }
 
         Log.d(LOGTAG, "Player Error: " + what);
+
         if(mCallback != null)
             mCallback.onError(what);
     }

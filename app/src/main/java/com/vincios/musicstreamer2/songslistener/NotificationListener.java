@@ -65,7 +65,7 @@ public class NotificationListener extends NotificationListenerService {
         String artist = metadata.getText(MediaMetadata.METADATA_KEY_ARTIST).toString();
         Log.d(LOGTAG, title + " - " +artist);
 
-        Intent notificationParams = new Intent(Utils.ACTION_SEARCH);
+        Intent notificationParams = new Intent(Utils.CONSTANTS.ACTION_SEARCH);
         notificationParams.putExtra(SearchNotificationManager.TITLE, title);
         notificationParams.putExtra(SearchNotificationManager.ARTIST, artist);
         sendBroadcast(notificationParams);

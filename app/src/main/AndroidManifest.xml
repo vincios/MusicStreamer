@@ -23,6 +23,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
         <activity android:name=".ui.activities.PlayerActivity" />
         <activity android:name=".ui.activities.FavouriteSongsActivity" />
 
@@ -43,12 +44,6 @@
                 <action android:name="android.media.browse.MediaBrowseService" />
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
             </intent-filter>
-        </service>
-
-        <service
-            android:name=".songslistener.MediaListenerService"
-            android:enabled="false"
-            android:exported="false">
         </service>
 
         <service android:name=".songslistener.NotificationListener"

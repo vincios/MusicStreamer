@@ -9,9 +9,13 @@ import android.renderscript.RenderScript;
 import android.renderscript.ScriptIntrinsicBlur;
 
 public class Utils {
-    public static final int CURRENT_SDK_VERSION = Build.VERSION.SDK_INT;
-    public static String ACTION_UPDATE_BUFFERED_POSITION = "com.vincios.musicstreamer2.action.UPDATE_BUFFERED_POSITION";
-    public static String ACTION_SEARCH = "com.vincios.musicstreamer2.action.SEARCH";
+
+    public static final class CONSTANTS{
+        public static final int CURRENT_SDK_VERSION = Build.VERSION.SDK_INT;
+        public static final String BUFFERED_POSITION = "buffered_position";
+        public static String ACTION_UPDATE_BUFFERED_POSITION = "com.vincios.musicstreamer2.action.UPDATE_BUFFERED_POSITION";
+        public static String ACTION_SEARCH = "com.vincios.musicstreamer2.action.SEARCH";
+    }
 
     //private static final float BLUR_RADIUS = 25f;
 

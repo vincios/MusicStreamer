@@ -12,7 +12,9 @@ import com.vincios.musicstreamer2.connectors.Song;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class PlayingSongsQueue {
     private static final PlayingSongsQueue ourInstance = new PlayingSongsQueue();
@@ -25,9 +27,11 @@ public class PlayingSongsQueue {
     private List<MediaBrowserCompat.MediaItem> mCurrentPlayingQueue;
     private int mCurrentIndex;
     private String mQueueTitle;
+    private Map<String, Song> songsCache;
 
     private PlayingSongsQueue() {
         mCurrentPlayingQueue = Collections.synchronizedList(new ArrayList<MediaBrowserCompat.MediaItem>());
+        songsCache = new HashMap<>();
         mCurrentIndex = 0;
         mQueueTitle = "";
     }
@@ -102,6 +106,31 @@ public class PlayingSongsQueue {
         }
     }
 
+    public void replaceItemOnPosition(Song s, int index, boolean autoPlay){
+        if(index == -1)
+            index = searchItemPosition(s.getId());
+
+        if(index == -1)
+            return;
+
+        mCurrentPlayingQueue.set(index, adaptSong(s));
+        if(mListener != null)
+            mListener.onQueueChanged();
+
+        if(autoPlay)
+            setCurrentPlaying(index);
+    }
+
+    private int searchItemPosition(String id) {
+        int pos = 0;
+        for (MediaBrowserCompat.MediaItem item : mCurrentPlayingQueue){
+            if(id.equals(item.getMediaId()))
+                return pos;
+            pos++;
+        }
+        return -1;
+    }
+
 
     public List<MediaSessionCompat.QueueItem> getCurrentQueue() {
         List<MediaSessionCompat.QueueItem> queue = new ArrayList<>(mCurrentPlayingQueue.size());
@@ -165,7 +194,7 @@ public class PlayingSongsQueue {
         return mCurrentPlayingQueue.get(index);
     }
 
-    public MediaBrowserCompat.MediaItem getItemById(@NonNull String id){
+    public MediaBrowserCompat.MediaItem getItemByMediaId(@NonNull String id){
         for (MediaBrowserCompat.MediaItem item : mCurrentPlayingQueue){
             if(id.equalsIgnoreCase(item.getMediaId())){
                 return item;
@@ -178,6 +207,8 @@ public class PlayingSongsQueue {
     private MediaBrowserCompat.MediaItem adaptSong(Song songToAdapt){
         if(songToAdapt == null)
             return null;
+        songsCache.put(songToAdapt.getId(), songToAdapt);
+
         MediaDescriptionCompat.Builder mediaItemBuilder = new MediaDescriptionCompat.Builder();
 
         mediaItemBuilder.setMediaId(songToAdapt.getId());
@@ -195,6 +226,13 @@ public class PlayingSongsQueue {
         mediaItemBuilder.setExtras(bundle);
 
         return new MediaBrowserCompat.MediaItem(mediaItemBuilder.build(), MediaBrowserCompat.MediaItem.FLAG_PLAYABLE);
+    }
+
+    public Song extractSong(MediaBrowserCompat.MediaItem item){
+        if(songsCache.containsKey(item.getMediaId()))
+            return songsCache.get(item.getMediaId());
+
+        return null;
     }
 
     public interface QueueListener{

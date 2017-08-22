@@ -39,7 +39,7 @@ public class SearchNotificationManager extends BroadcastReceiver {
         // Creates an explicit intent for an Activity in your app
         Intent resultIntent = new Intent(context, MainActivity.class);
         resultIntent
-                .setAction(Utils.ACTION_SEARCH)
+                .setAction(Utils.CONSTANTS.ACTION_SEARCH)
                 .putExtra(MainActivity.SEARCH_QUERY, query);
 
 

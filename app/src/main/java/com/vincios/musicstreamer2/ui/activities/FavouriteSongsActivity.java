@@ -3,6 +3,7 @@ package com.vincios.musicstreamer2.ui.activities;
 import android.app.DialogFragment;
 import android.support.design.widget.Snackbar;
 import android.os.Bundle;
+import android.support.v4.media.MediaBrowserCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -11,8 +12,12 @@ import android.view.View;
 import android.widget.RelativeLayout;
 
 import com.sothree.slidinguppanel.SlidingUpPanelLayout;
+import com.vincios.musicstreamer2.PlayingSongsQueue;
 import com.vincios.musicstreamer2.R;
 import com.vincios.musicstreamer2.connectors.Song;
+import com.vincios.musicstreamer2.connectors.SongLinkValue;
+import com.vincios.musicstreamer2.connectors.tasks.ConnectorsResultListener;
+import com.vincios.musicstreamer2.connectors.tasks.SongLinkRequestTask;
 import com.vincios.musicstreamer2.database.DatabaseReadyListener;
 import com.vincios.musicstreamer2.database.SongDatabaseHandler;
 import com.vincios.musicstreamer2.ui.widgets.MyDialogFragment;
@@ -175,4 +180,20 @@ public class FavouriteSongsActivity extends SlidingPlayerBaseActivity {
         adapter.insertItemAtPosition(s, position);
     }
 
+    @Override
+    public void reloadSongLink(MediaBrowserCompat.MediaItem itemToReload) {
+        final Song s = PlayingSongsQueue.getInstance().extractSong(itemToReload);
+
+        SongLinkRequestTask task = new SongLinkRequestTask(new ConnectorsResultListener() {
+            @Override public void onSearchResult(List<Song> songs) {}
+            @Override public void onFail(Exception exception) {}
+            @Override
+            public void onLinkRequest(SongLinkValue value) {
+                database.saveSongLink(value.getSongId(), value.getLink(), true);
+                PlayingSongsQueue.getInstance().replaceItemOnPosition(s, -1, true);
+            }
+        });
+
+        task.execute(s);
+    }
 }

@@ -1,14 +1,10 @@
 package com.vincios.musicstreamer2.ui.activities;
 
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.media.MediaMetadata;
-import android.media.session.MediaController;
-import android.media.session.MediaSessionManager;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v4.media.MediaBrowserCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
@@ -25,6 +21,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.vincios.musicstreamer2.PlayingSongsQueue;
 import com.vincios.musicstreamer2.R;
 import com.vincios.musicstreamer2.Utils;
 import com.vincios.musicstreamer2.connectors.Song;
@@ -33,8 +30,6 @@ import com.vincios.musicstreamer2.connectors.tasks.ConnectorsResultListener;
 import com.vincios.musicstreamer2.connectors.tasks.SongLinkRequestTask;
 import com.vincios.musicstreamer2.connectors.tasks.SongsSearchTask;
 import com.vincios.musicstreamer2.database.SongDatabaseHandler;
-import com.vincios.musicstreamer2.songslistener.MediaListenerService;
-import com.vincios.musicstreamer2.songslistener.NotificationListener;
 import com.vincios.musicstreamer2.ui.SongListAdapter;
 
 import java.util.ArrayList;
@@ -112,21 +107,7 @@ public class MainActivity extends SlidingPlayerBaseActivity implements Connector
 
         songDatabase = new SongDatabaseHandler(this);
         lastPlayedSongs = new HashMap<>();
-
-       // startService(new Intent(this, MediaListenerService.class));
-
-        //addPlayerFragment();
     }
-
-    /*private void addPlayerFragment() {
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-
-        if(mPlayerFragment == null)
-            mPlayerFragment = new PlayerFragment();
-
-        //transaction.replace(R.id.mainActivityBottomPanel, mPlayerFragment);
-        //transaction.commit();
-    }*/
 
     private void searchResultListInitialize() {
         searchResultList = (RecyclerView) findViewById(R.id.searchResultList);
@@ -139,7 +120,7 @@ public class MainActivity extends SlidingPlayerBaseActivity implements Connector
                 Song song = ((SongListAdapter) searchResultList.getAdapter()).getItemAtPosition(position);
                 String songId = song.getId();
 
-                //search if song already played in this session, so no needs to start a new link request
+                //search if song already played in this session, so no need to start a new link request
                 if(lastPlayedSongs.containsKey(songId)) {
                     Song s = lastPlayedSongs.get(songId);
                     if(s.getLink() != null){
@@ -156,6 +137,7 @@ public class MainActivity extends SlidingPlayerBaseActivity implements Connector
                     task.execute(song);
                 }else {
                     Log.d(LOGTAG, "Found link in database for id " + song.getId());
+                    Log.d(LOGTAG, "Link: " + songLink);
                     song.setLink(songLink);
                     lastPlayedSongs.put(song.getId(), song);
                     playSong(song);
@@ -173,7 +155,7 @@ public class MainActivity extends SlidingPlayerBaseActivity implements Connector
                         @Override public void onFail(Exception exception) {}
                         @Override
                         public void onLinkRequest(SongLinkValue value) {
-                            songDatabase.saveSongLink(value.getSongId(), value.getLink());
+                            songDatabase.saveSongLink(value.getSongId(), value.getLink(), false);
                             Log.d(LOGTAG, "onSongSave: Saved link");
                         }
                     });
@@ -202,9 +184,11 @@ public class MainActivity extends SlidingPlayerBaseActivity implements Connector
         super.onStart();
         Log.d(LOGTAG, "onStart");
         Intent i = getIntent();
-        if(i != null && Utils.ACTION_SEARCH.equals(i.getAction())){
+        if(i != null && Utils.CONSTANTS.ACTION_SEARCH.equals(i.getAction())){
             searchQueryEditText.setText(i.getStringExtra(SEARCH_QUERY));
         }
+
+
     }
 
     @Override
@@ -295,7 +279,7 @@ public class MainActivity extends SlidingPlayerBaseActivity implements Connector
 
     @Override
     public void onLinkRequest(SongLinkValue value) {
-        songDatabase.saveSongLink(value.getSongId(), value.getLink());
+        songDatabase.saveSongLink(value.getSongId(), value.getLink(), true);
         Log.d(LOGTAG, "Saved link in database for id " + value.getLink());
 
         Song s = lastPlayedSongs.get(value.getSongId());
@@ -311,4 +295,20 @@ public class MainActivity extends SlidingPlayerBaseActivity implements Connector
         songDatabase.close();
     }
 
+    @Override
+    public void reloadSongLink(MediaBrowserCompat.MediaItem itemToReload) {
+        final Song s = PlayingSongsQueue.getInstance().extractSong(itemToReload);
+
+        SongLinkRequestTask task = new SongLinkRequestTask(new ConnectorsResultListener() {
+            @Override public void onSearchResult(List<Song> songs) {}
+            @Override public void onFail(Exception exception) {}
+            @Override
+            public void onLinkRequest(SongLinkValue value) {
+                songDatabase.saveSongLink(value.getSongId(), value.getLink(), true);
+                PlayingSongsQueue.getInstance().replaceItemOnPosition(s, -1, true);
+            }
+        });
+
+        task.execute(s);
+    }
 }

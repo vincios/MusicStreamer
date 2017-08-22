@@ -34,12 +34,16 @@ public class SongDatabaseHandler implements TaskListener {
         this.listener = listener;
     }
 
-    public void saveSongLink(String id, String link){
+    public void saveSongLink(String id, String link, boolean overwriteIfExist){
         if(database == null || !database.isOpen())
             throw new SQLException("Database not opened");
 
-        if(isSavedLink(id))
-            return;
+        if(isSavedLink(id)) {
+            if (overwriteIfExist)
+                removeSongLink(id);
+            else
+                return;
+        }
 
         ContentValues values = new ContentValues(2);
         values.put(Song._ID, id);
@@ -48,6 +52,18 @@ public class SongDatabaseHandler implements TaskListener {
         database.insert(SongDatabaseHelper.SONGS_LINK_TABLE_NAME, null, values);
     }
 
+    public void removeSongLink(String id){
+        if(database == null || !database.isOpen())
+            throw new SQLException("Database not opened");
+
+        String whereClause = Song._ID + "=?";
+        String[] whereArgs = {id};
+
+        database.delete(SongDatabaseHelper.SONGS_LINK_TABLE_NAME,
+                whereClause,
+                whereArgs
+        );
+    }
 
     public void saveFavouriteSong(Song song){
         if(database == null || !database.isOpen())

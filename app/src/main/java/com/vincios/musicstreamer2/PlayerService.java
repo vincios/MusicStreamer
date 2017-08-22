@@ -43,11 +43,12 @@ public class PlayerService extends MediaBrowserServiceCompat implements LocalPla
     private PlayingSongsQueue mQueue;
     private android.support.v4.media.session.MediaSessionCompat.Callback mMediaSessionCallback = new MediaSessionCallback();
 
-
+    private MusixmatchHelper mMusixmatchHelper;
     @Override
     public void onCreate() {
         super.onCreate();
         Log.d(LOGTAG, "onCreate");
+        mMusixmatchHelper = new MusixmatchHelper(this);
 
         //adding media button handling on android N
         /*ComponentName mbrCN = new ComponentName(this, MediaButtonReceiver.class);
@@ -56,7 +57,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements LocalPla
         mMediaSession = new MediaSessionCompat(this, LOGTAG_MEDIASESSION);
         mMediaSession.setFlags(
                 MediaSessionCompat.FLAG_HANDLES_MEDIA_BUTTONS
-              | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS
+                        | MediaSessionCompat.FLAG_HANDLES_TRANSPORT_CONTROLS
         );
 
 
@@ -71,7 +72,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements LocalPla
         mPlayBackBuilder = new PlaybackStateCompat.Builder();
         mMetaMetadataBuilder = new MediaMetadataCompat.Builder();
 
-        updatePlaybackState(PlaybackStateCompat.STATE_NONE);
+        updatePlaybackState(PlaybackStateCompat.STATE_NONE, -1, null);
 
         mMediaSession.setCallback(mMediaSessionCallback);
         setSessionToken(mMediaSession.getSessionToken());
@@ -81,7 +82,6 @@ public class PlayerService extends MediaBrowserServiceCompat implements LocalPla
         Intent launchActivity = new Intent(context, MainActivity.class);
         PendingIntent pi = PendingIntent.getActivity(context, 99, launchActivity, PendingIntent.FLAG_UPDATE_CURRENT);
         mMediaSession.setSessionActivity(pi);
-
 
         mIsServiceStarted = false;
 
@@ -151,7 +151,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements LocalPla
         stopForeground(removeNotification);
     }
 
-    private void updatePlaybackState(int state) {
+    private void updatePlaybackState(int state, int errorCode, String errorMessage) {
         Log.d(LOGTAG, "updatePlaybackState. state ="+state);
         PlaybackStateCompat newState;
         switch (state){
@@ -187,6 +187,14 @@ public class PlayerService extends MediaBrowserServiceCompat implements LocalPla
                         .setActiveQueueItemId(mPlayer.getCurrentPlayingQueueId())
                         .build();
                 break;
+            case PlaybackStateCompat.STATE_ERROR:
+                newState = mPlayBackBuilder
+                        .setErrorMessage(errorCode, errorMessage)
+                        .setActions(getAvailableActions())
+                        .setState(PlaybackStateCompat.STATE_ERROR, mPlayer.getCurrentPosition(), 1.0f, android.os.SystemClock.elapsedRealtime())
+                        .setActiveQueueItemId(mPlayer.getCurrentPlayingQueueId())
+                        .build();
+                break;
             default:
                 newState = mPlayBackBuilder
                         .setActions(getAvailableActions())
@@ -196,6 +204,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements LocalPla
         }
 
         mMediaSession.setPlaybackState(newState);
+        mMusixmatchHelper.sendPlaybackState(newState);
     }
 
     private void updateMetadata(MediaDescriptionCompat metadata){
@@ -206,7 +215,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements LocalPla
             mMetaMetadataBuilder
                     .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, metadata.getMediaId())
                     .putString(MediaMetadataCompat.METADATA_KEY_TITLE, ""+metadata.getTitle())
-                    .putString(MediaMetadataCompat.METADATA_KEY_AUTHOR, ""+metadata.getSubtitle())
+                    .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, ""+metadata.getSubtitle())
                     .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_URI, ""+metadata.getMediaUri())
                     .putBitmap(MediaMetadataCompat.METADATA_KEY_ART, metadata.getIconBitmap());
 
@@ -224,7 +233,10 @@ public class PlayerService extends MediaBrowserServiceCompat implements LocalPla
                     mMetaMetadataBuilder.putLong(MediaMetadataCompat.METADATA_KEY_DURATION, extras.getInt(Song.LENGTH));
             }
 
-            mMediaSession.setMetadata(mMetaMetadataBuilder.build());
+            MediaMetadataCompat newMetadata = mMetaMetadataBuilder.build();
+
+            mMediaSession.setMetadata(newMetadata);
+            mMusixmatchHelper.sendMetadata(newMetadata);
         }
     }
 
@@ -286,7 +298,7 @@ public class PlayerService extends MediaBrowserServiceCompat implements LocalPla
 
     @Override
     public void onPlaybackStatusChanged(int newState) {
-        updatePlaybackState(newState);
+        updatePlaybackState(newState, -1, null);
     }
 
     @Override
@@ -300,12 +312,10 @@ public class PlayerService extends MediaBrowserServiceCompat implements LocalPla
         }
     }
 
-
     @Override
     public void onError(String cause) {
         Log.d(LOGTAG, "Song play error: "+ cause);
-        Toast.makeText(this, getResources().getText(R.string.song_connection_failed), Toast.LENGTH_LONG).show();
-        this.onCompletion();
+        updatePlaybackState(PlaybackStateCompat.STATE_ERROR, PlaybackStateCompat.ERROR_CODE_NOT_SUPPORTED, cause);
     }
 
 
@@ -358,25 +368,24 @@ public class PlayerService extends MediaBrowserServiceCompat implements LocalPla
             seekPlayer(pos);
         }
 
-        @Override
+/*        @Override
         public void onCustomAction(String action, Bundle extras) {
             super.onCustomAction(action, extras);
             if(Utils.ACTION_UPDATE_BUFFERED_POSITION.equals(action) && mPlayer.isLoading()){
                 updatePlaybackState(mPlayer.getState());
             }
         }
+*/
 
-
-        /*@Override
-        public void onPlayFromMediaId(String mediaId, Bundle extras) {
-            super.onPlayFromMediaId(mediaId, extras);
-            Log.d(LOGTAG, "onPlayFromMediaId. mediaId="+mediaId);
-            MediaBrowserCompat.MediaItem song = PlayingSongsQueue.getInstance().getItemById(mediaId);
-            if(song != null){
-                playSong(song);
+        @Override
+        public void onCommand(String command, Bundle extras, ResultReceiver cb) {
+            super.onCommand(command, extras, cb);
+            if(Utils.CONSTANTS.ACTION_UPDATE_BUFFERED_POSITION.equals(command)) {
+                Bundle result = new Bundle(1);
+                result.putLong(Utils.CONSTANTS.BUFFERED_POSITION, mPlayer.getBufferedPosition());
+                cb.send(1, result);
             }
-        }*/
-
+        }
     }
 
 

@@ -52,7 +52,8 @@ public class SongsSearchTask extends AsyncTask<String, Void, List<Song>> {
     protected void onPostExecute(List<Song> songs) {
         if (exception != null)
             listener.onFail(exception);
-        else
+
+        if(songs.size() > 0)
             listener.onSearchResult(songs);
     }
 
